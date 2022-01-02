@@ -9,7 +9,7 @@ use std::sync::{Arc, mpsc};
 use std::sync::mpsc::Sender;
 use std::time::{Duration, SystemTime};
 
-use discord_rich_presence::activity::{Activity, Assets, Timestamps};
+use discord_rich_presence::activity::{Activity, Assets, Button, Timestamps};
 use discord_rich_presence::DiscordIpc;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 use serde::{Deserialize, Serialize};
@@ -212,13 +212,19 @@ fn set_discord_presence(discord: &mut Option<Box<dyn DiscordIpc>>, song: &Option
         discord.as_mut().map(|discord| {
             let start = SystemTime::now() - song.elapsed;
             let start = start.duration_since(time::UNIX_EPOCH).unwrap();
-            let activity = Activity::new()
+            let mut activity = Activity::new()
                 .details(song.metadata.artist.as_deref().unwrap_or("Unknown Artist"))
                 .state(song.metadata.title.as_deref().unwrap_or("Unknown Title"))
                 .timestamps(Timestamps::new().start(start.as_secs() as i64))
                 .assets(Assets::new()
                     .large_image("icon")
                     .large_text("https://pmu.techno.fish/"));
+
+            if let Some(origin) = &song.metadata.origin {
+                let button = Button::new(&origin.name, &origin.link);
+                activity = activity.buttons(vec![button]);
+            }
+
             let _ = discord.set_activity(activity);
         });
     }

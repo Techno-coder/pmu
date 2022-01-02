@@ -9,6 +9,13 @@ use regex::Regex;
 pub struct Metadata {
     pub artist: Option<String>,
     pub title: Option<String>,
+    pub origin: Option<Origin>,
+}
+
+#[derive(Debug)]
+pub struct Origin {
+    pub name: String,
+    pub link: String,
 }
 
 pub fn find_metadata(path: &Path) -> Metadata {
@@ -24,9 +31,9 @@ pub fn find_metadata(path: &Path) -> Metadata {
     }
 
     // Default metadata.
-    let song = path.file_stem().unwrap().to_string_lossy();
-    let song = Some(song.to_string());
-    Metadata { artist: None, title: song }
+    let title = path.file_stem().unwrap().to_string_lossy();
+    let title = Some(title.to_string());
+    Metadata { title, ..Metadata::default() }
 }
 
 fn find_extension(extension: &str, directory: &Path) -> Option<PathBuf> {
@@ -51,7 +58,7 @@ fn read_file_string(path: &Path) -> Option<String> {
 fn find_regex_match(pattern: &str, text: &str) -> Option<String> {
     let re = Regex::new(pattern).unwrap();
     let string = re.captures(text)?.get(1)?;
-    Some(string.as_str().to_string())
+    Some(string.as_str().trim().to_string())
 }
 
 /// https://osu.ppy.sh/home
@@ -60,9 +67,21 @@ fn osu(path: &Path) -> Option<Metadata> {
     let path = find_extension("osu", directory)?;
     let string = &read_file_string(&path)?;
 
+    let parent = directory.file_stem().unwrap();
+    let origin = Option::or(
+        find_regex_match(r"BeatmapSetID:([^\n]+)", string),
+        find_regex_match(r"(\d+)", &parent.to_string_lossy()),
+    );
+
+    let origin = origin.map(|origin| Origin {
+        name: "osu! Beatmap".to_string(),
+        link: format!("https://osu.ppy.sh/beatmapsets/{}", origin),
+    });
+
     Some(Metadata {
         artist: find_regex_match(r"Artist:([^\n]+)", string),
         title: find_regex_match(r"Title:([^\n]+)", string),
+        origin,
     })
 }
 
@@ -75,5 +94,6 @@ fn stepmania(path: &Path) -> Option<Metadata> {
     Some(Metadata {
         artist: find_regex_match(r"#ARTIST:([^;]+);", string),
         title: find_regex_match(r"#TITLE:([^;]+);", string),
+        origin: None,
     })
 }
