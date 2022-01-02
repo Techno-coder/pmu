@@ -14,7 +14,6 @@ pub struct Config {
     pub loop_last: bool,
 }
 
-
 impl Default for Config {
     fn default() -> Self {
         Self {

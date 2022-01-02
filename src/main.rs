@@ -31,9 +31,9 @@ enum Commands {
     },
     /// Pause or unpause the current song.
     Pause,
-    /// Stops the player.
+    /// Stop the player.
     Stop,
-    /// Skips to the next song.
+    /// Skip to the next song.
     Skip,
     /// Start the player daemon. This should not be used directly.
     Daemon,
