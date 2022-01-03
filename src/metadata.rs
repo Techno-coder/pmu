@@ -58,7 +58,11 @@ fn read_file_string(path: &Path) -> Option<String> {
 fn find_regex_match(pattern: &str, text: &str) -> Option<String> {
     let re = Regex::new(pattern).unwrap();
     let string = re.captures(text)?.get(1)?;
-    Some(string.as_str().trim().to_string())
+    let string = string.as_str().trim();
+    match string.is_empty() {
+        false => Some(string.to_string()),
+        true => None,
+    }
 }
 
 /// https://osu.ppy.sh/home
