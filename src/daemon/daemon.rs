@@ -34,18 +34,26 @@ pub struct CurrentSong {
     pub sink: Arc<Sink>,
     // Song metadata.
     pub metadata: Metadata,
-    // The time elapsed into the playback of this song.
-    pub elapsed: Duration,
+    // The time elapsed into the playback of this
+    // song when the player was last paused.
+    last_elapsed: Duration,
     // The timestamp when this song was last resumed.
-    pub last_resume: SystemTime,
+    last_resume: SystemTime,
+}
+
+impl CurrentSong {
+    pub fn elapsed(&self) -> Duration {
+        let delta = SystemTime::now().duration_since(self.last_resume);
+        self.last_elapsed + delta.unwrap()
+    }
 }
 
 pub fn daemon(config: &Config, listener: TcpListener, path: PathBuf) -> crate::Result<()> {
+    let discord = &mut discord_client();
+    let (_stream, stream_handle) = OutputStream::try_default()?;
     let (tx, rx) = mpsc::channel::<Message>();
     socket_listener(listener, tx.clone());
 
-    let discord = &mut discord_client();
-    let (_stream, stream_handle) = OutputStream::try_default()?;
     let load_song = &mut |discord: &mut Discord, path| {
         let song = play_song(config, &stream_handle, path)?;
         sink_finished_listener(tx.clone(), song.sink.clone());
@@ -63,16 +71,14 @@ pub fn daemon(config: &Config, listener: TcpListener, path: PathBuf) -> crate::R
                 true => {
                     // Resume playback.
                     song.sink.play();
-                    set_discord_presence(discord, &song);
                     song.last_resume = SystemTime::now();
+                    set_discord_presence(discord, &song);
                 }
                 false => {
                     // Pause playback.
                     song.sink.pause();
+                    song.last_elapsed = song.elapsed();
                     clear_presence(discord);
-                    song.elapsed += SystemTime::now()
-                        .duration_since(song.last_resume)
-                        .unwrap();
                 }
             },
             Message::Play { path, now } => match now {
@@ -121,7 +127,7 @@ fn play_song(
         path,
         sink,
         metadata,
-        elapsed: Duration::ZERO,
+        last_elapsed: Duration::ZERO,
         last_resume: SystemTime::now(),
     })
 }

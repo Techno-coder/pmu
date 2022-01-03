@@ -20,7 +20,7 @@ pub fn discord_client() -> Discord {
 
 pub fn set_discord_presence(Discord(discord): &mut Discord, song: &CurrentSong) {
     discord.as_mut().map(|discord| {
-        let start = SystemTime::now() - song.elapsed;
+        let start = SystemTime::now() - song.elapsed();
         let start = start.duration_since(time::UNIX_EPOCH).unwrap();
         let mut activity = Activity::new()
             .details(song.metadata.artist.as_deref().unwrap_or("Unknown Artist"))
