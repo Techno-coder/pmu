@@ -56,7 +56,7 @@ fn main() -> crate::Result<()> {
         Commands::Pause => daemon::send(config, &Message::Pause),
         Commands::Stop => daemon::send(config, &Message::Stop),
         Commands::Skip => daemon::send(config, &Message::Skip),
-        Commands::Daemon => daemon::daemon(config),
+        Commands::Daemon => daemon::bootstrap(config),
         Commands::Config => {
             println!("{}", config::directory().display());
             Ok(())
