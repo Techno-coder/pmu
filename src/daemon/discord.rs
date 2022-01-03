@@ -14,12 +14,13 @@ pub fn discord_client() -> Discord {
     Discord((|| -> Option<Box<dyn DiscordIpc>> {
         let mut client = new_client(DISCORD_CLIENT_ID).ok()?;
         client.connect().ok()?;
+        println!("Connected to Discord.");
         Some(Box::new(client))
     })())
 }
 
 pub fn set_discord_presence(Discord(discord): &mut Discord, song: &CurrentSong) {
-    discord.as_mut().map(|discord| {
+    if let Some(discord) = discord {
         let start = SystemTime::now() - song.elapsed();
         let start = start.duration_since(time::UNIX_EPOCH).unwrap();
         let mut activity = Activity::new()
@@ -36,12 +37,12 @@ pub fn set_discord_presence(Discord(discord): &mut Discord, song: &CurrentSong) 
         }
 
         let _ = discord.set_activity(activity);
-    });
+    }
 }
 
 pub fn clear_presence(Discord(discord): &mut Discord) {
-    discord.as_mut().map(|discord| {
+    if let Some(discord) = discord {
         let activity = Activity::new();
         let _ = discord.set_activity(activity);
-    });
+    }
 }

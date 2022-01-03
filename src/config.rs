@@ -12,6 +12,12 @@ pub struct Config {
     pub volume: f32,
     /// Whether to loop the last song of the queue.
     pub loop_last: bool,
+    // Lastfm username for scrobbling.
+    pub lastfm_username: String,
+    // Lastfm password.
+    pub lastfm_password: String,
+    // Duration before scrobbling a track to Lastfm.
+    pub lastfm_threshold_seconds: u64,
 }
 
 impl Default for Config {
@@ -20,6 +26,9 @@ impl Default for Config {
             port: 9999,
             volume: 0.2,
             loop_last: false,
+            lastfm_username: "".into(),
+            lastfm_password: "".into(),
+            lastfm_threshold_seconds: 110,
         }
     }
 }

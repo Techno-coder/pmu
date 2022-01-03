@@ -9,6 +9,7 @@ use regex::Regex;
 pub struct Metadata {
     pub artist: Option<String>,
     pub title: Option<String>,
+    pub album: Option<String>,
     pub origin: Option<Origin>,
 }
 
@@ -85,6 +86,7 @@ fn osu(path: &Path) -> Option<Metadata> {
     Some(Metadata {
         artist: find_regex_match(r"Artist:([^\n]+)", string),
         title: find_regex_match(r"Title:([^\n]+)", string),
+        album: None,
         origin,
     })
 }
@@ -98,6 +100,7 @@ fn stepmania(path: &Path) -> Option<Metadata> {
     Some(Metadata {
         artist: find_regex_match(r"#ARTIST:([^;]+);", string),
         title: find_regex_match(r"#TITLE:([^;]+);", string),
+        album: None,
         origin: None,
     })
 }

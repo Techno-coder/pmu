@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
 use crate::daemon::discord::{clear_presence, Discord, discord_client, set_discord_presence};
+use crate::daemon::lastfm::{lastfm_client, lastfm_now_playing, try_scrobble};
 use crate::metadata::{find_metadata, Metadata};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -50,6 +51,8 @@ impl CurrentSong {
 
 pub fn daemon(config: &Config, listener: TcpListener, path: PathBuf) -> crate::Result<()> {
     let discord = &mut discord_client();
+    let lastfm = &lastfm_client(config);
+
     let (_stream, stream_handle) = OutputStream::try_default()?;
     let (tx, rx) = mpsc::channel::<Message>();
     socket_listener(listener, tx.clone());
@@ -58,6 +61,7 @@ pub fn daemon(config: &Config, listener: TcpListener, path: PathBuf) -> crate::R
         let song = play_song(config, &stream_handle, path)?;
         sink_finished_listener(tx.clone(), song.sink.clone());
         set_discord_presence(discord, &song);
+        lastfm_now_playing(lastfm, &song);
         crate::Result::Ok(song)
     };
 
@@ -100,11 +104,13 @@ pub fn daemon(config: &Config, listener: TcpListener, path: PathBuf) -> crate::R
                     (None, false) => break,
                 };
 
+                try_scrobble(config, lastfm, &song);
                 song = load_song(discord, path)?;
             }
         }
     }
 
+    try_scrobble(config, lastfm, &song);
     Ok(())
 }
 

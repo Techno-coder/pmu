@@ -12,3 +12,4 @@ dirs = "^4"
 rusqlite = { version = "^0.26", features = ["bundled"] }
 discord-rich-presence = "^0.1"
 regex = "1"
+rustfm-scrobble = "^1.1"
