@@ -12,7 +12,7 @@ use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
-use crate::daemon::discord::{clear_presence, Discord, discord_client, set_discord_presence};
+use crate::daemon::discord::{clear_presence, discord_client, set_discord_presence};
 use crate::daemon::lastfm::{lastfm_client, lastfm_now_playing, try_scrobble};
 use crate::metadata::{find_metadata, Metadata};
 
@@ -50,23 +50,24 @@ impl CurrentSong {
 }
 
 pub fn daemon(config: &Config, listener: TcpListener, path: PathBuf) -> crate::Result<()> {
+    // Play song immediately.
+    let (_stream, stream_handle) = OutputStream::try_default()?;
+    let mut song = play_song(config, &stream_handle, path)?;
+
+    // Load deferred services.
+    let queue = &mut VecDeque::new();
     let discord = &mut discord_client();
     let lastfm = &lastfm_client(config);
-
-    let (_stream, stream_handle) = OutputStream::try_default()?;
     let (tx, rx) = mpsc::channel::<Message>();
     socket_listener(listener, tx.clone());
 
-    let load_song = &mut |discord: &mut Discord, path| {
-        let song = play_song(config, &stream_handle, path)?;
+    let register_song = &mut |song: &CurrentSong, discord: &mut _| {
         sink_finished_listener(tx.clone(), song.sink.clone());
-        set_discord_presence(discord, &song);
-        lastfm_now_playing(lastfm, &song);
-        crate::Result::Ok(song)
+        set_discord_presence(discord, song);
+        lastfm_now_playing(lastfm, song);
     };
 
-    let queue = &mut VecDeque::new();
-    let mut song: CurrentSong = load_song(discord, path)?;
+    register_song(&song, discord);
     for message in rx {
         println!("{:?}", message);
         match message {
@@ -104,8 +105,13 @@ pub fn daemon(config: &Config, listener: TcpListener, path: PathBuf) -> crate::R
                     (None, false) => break,
                 };
 
-                try_scrobble(config, lastfm, &song);
-                song = load_song(discord, path)?;
+                // Play next song immediately.
+                let next = play_song(config, &stream_handle, path)?;
+                let previous = std::mem::replace(&mut song, next);
+                register_song(&song, discord);
+
+                // Scrobble previous song.
+                try_scrobble(config, lastfm, &previous);
             }
         }
     }

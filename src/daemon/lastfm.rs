@@ -17,10 +17,10 @@ pub fn lastfm_client(config: &Config) -> Lastfm {
             return None;
         }
 
-        // Connect to Lastfm.
+        // Connect to Last.fm.
         let mut lastfm = Scrobbler::new(API_KEY, SHARED_SECRET);
         lastfm.authenticate_with_password(username, password).ok()?;
-        println!("Authenticated to Lastfm.");
+        println!("Authenticated to Last.fm.");
         Some(lastfm)
     })())
 }

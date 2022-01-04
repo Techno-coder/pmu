@@ -12,11 +12,11 @@ pub struct Config {
     pub volume: f32,
     /// Whether to loop the last song of the queue.
     pub loop_last: bool,
-    // Lastfm username for scrobbling.
+    // Last.fm username for scrobbling.
     pub lastfm_username: String,
-    // Lastfm password.
+    // Last.fm password.
     pub lastfm_password: String,
-    // Duration before scrobbling a track to Lastfm.
+    // Duration before scrobbling a track to Last.fm.
     pub lastfm_threshold_seconds: u64,
 }
 

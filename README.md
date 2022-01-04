@@ -24,7 +24,7 @@ Show off the song you're playing in Discord!
 
 ![](media/presence.png)
 
-### Lastfm scrobbling
+### Last.fm scrobbling
 
 Track the music you play on [last.fm](https://www.last.fm/)!
 

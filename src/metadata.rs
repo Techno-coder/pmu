@@ -4,6 +4,9 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use regex::Regex;
+use symphonia::core::io::MediaSourceStream;
+use symphonia::core::meta::{StandardTagKey, Value};
+use symphonia::core::probe::Hint;
 
 #[derive(Debug, Default)]
 pub struct Metadata {
@@ -23,6 +26,7 @@ pub fn find_metadata(path: &Path) -> Metadata {
     let candidates = [
         osu(path),
         stepmania(path),
+        file_tags(path),
     ];
 
     for candidate in candidates {
@@ -101,6 +105,56 @@ fn stepmania(path: &Path) -> Option<Metadata> {
         artist: find_regex_match(r"#ARTIST:([^;]+);", string),
         title: find_regex_match(r"#TITLE:([^;]+);", string),
         album: None,
+        origin: None,
+    })
+}
+
+/// Audio metadata tags.
+fn file_tags(path: &Path) -> Option<Metadata> {
+    let file = File::open(path).ok()?;
+    let mss = MediaSourceStream::new(Box::new(file), Default::default());
+
+    // Construct file hint.
+    let mut hint = Hint::new();
+    if let Some(extension) = path.extension() {
+        if let Some(extension) = extension.to_str() {
+            hint.with_extension(extension);
+        }
+    }
+
+    // Get latest metadata revision.
+    let probe = symphonia::default::get_probe();
+    let result = probe.format(&hint, mss, &Default::default(), &Default::default()).ok()?;
+    let metadata = result.metadata.current()?;
+
+    // Search for tag.
+    let find_tag = |key: StandardTagKey| {
+        for tag in metadata.tags() {
+            // FIXME: https://github.com/pdeljanov/Symphonia/pull/93
+            if let Some(std_key) = tag.std_key {
+                let std_key = std::mem::discriminant(&std_key);
+                let key = std::mem::discriminant(&key);
+                if std_key == key {
+                    if let Value::String(tag) = &tag.value {
+                        return Some(tag.to_string());
+                    }
+                }
+            }
+        }
+
+        return None;
+    };
+
+    // Metadata must contain title.
+    let title = find_tag(StandardTagKey::TrackTitle)?;
+    let artist = find_tag(StandardTagKey::Artist);
+    let album = find_tag(StandardTagKey::Album);
+
+    // Construct metadata.
+    Some(Metadata {
+        artist,
+        title: Some(title),
+        album,
         origin: None,
     })
 }
