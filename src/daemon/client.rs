@@ -8,7 +8,7 @@ use crate::daemon::daemon;
 pub fn bootstrap(config: &Config) -> crate::Result<()> {
     let address = socket_address(config);
     let listener = TcpListener::bind(address)?;
-    println!("Ready!");
+    println!("Listening on: {}", address);
 
     for conn in listener.incoming() {
         let conn = conn?;
