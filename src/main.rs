@@ -76,6 +76,7 @@ fn play(config: &Config, input: PathBuf, now: bool) -> crate::Result<()> {
 
     match path {
         None => Err("Audio file does not exist.".into()),
+        Some(path) if !path.is_file() => Err("Path provided is not a file.".into()),
         Some(path) => {
             history::insert(&input, &path)?;
             daemon::send(config, &Message::Play { path, now })
