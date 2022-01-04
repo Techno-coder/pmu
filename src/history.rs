@@ -7,7 +7,7 @@ use crate::config;
 
 fn connect() -> crate::Result<Connection> {
     let directory = config::directory();
-    let path = &directory.join("history.db");
+    let path = &directory.join("data.db");
     let conn = Connection::open(path)?;
 
     conn.execute(
